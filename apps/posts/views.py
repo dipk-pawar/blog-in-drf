@@ -17,5 +17,8 @@ class BlogPostListCreateView(generics.ListCreateAPIView):
 
 class BlogPostRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = BlogPost.objects.all()
     serializer_class = BlogPostSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return BlogPost.objects.filter(author=user)
