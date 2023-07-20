@@ -9,7 +9,10 @@ from rest_framework.permissions import IsAuthenticated
 class BlogPostListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BlogPostSerializer
-    queryset = BlogPost.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        return BlogPost.objects.filter(author=user)
 
 
 class BlogPostRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
