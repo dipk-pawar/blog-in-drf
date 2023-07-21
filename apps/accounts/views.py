@@ -49,7 +49,7 @@ class UserListAPIView(generics.ListAPIView):
 
 class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated, SuperuserORLoggedinUser]
-    serializer_class = AccountSerializer
+    serializer_class = UserSerializer
 
     def get_object(self):
         # Get the logged-in user
