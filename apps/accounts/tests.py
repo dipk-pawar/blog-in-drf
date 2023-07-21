@@ -2,8 +2,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from .models import User
 
 
 class UserCreateAPITest(APITestCase):
@@ -118,3 +117,48 @@ class LoginAPIViewTest(APITestCase):
 
         # Check if the response contains the error message for missing password field
         self.assertIn("password", response.data)
+
+
+class UserListAPIViewTest(APITestCase):
+    def setUp(self):
+        # Create a test superuser
+        self.super_user = User.objects.create_superuser(
+            email="superuser@example.com",
+            password="testpassword",
+            first_name="Dipak",
+            last_name="Pawar",
+        )
+
+        # Create a regular user
+        self.user = User.objects.create_user(
+            email="user@example.com",
+            password="testpassword",
+            first_name="Dip",
+            last_name="Pawar",
+        )
+
+        self.url = reverse("users")
+
+    def test_superuser_access(self):
+        # Log in the superuser
+        self.client.force_authenticate(user=self.super_user)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the response data contains the serialized user data
+        self.assertEqual(len(response.data), User.objects.count())
+
+    def test_regular_user_access(self):
+        # Log in the regular user
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unauthenticated_access(self):
+        # Do not log in any user
+        self.client.force_authenticate(user=None)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
