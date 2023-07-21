@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import BlogPost, Comment
+from .models import BlogPost, Comment, Like
 from apps.accounts.models import User
 from apps.accounts.serializers import UserSerializer
 
@@ -19,6 +19,21 @@ class BlogPostSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         blog_post = super().to_representation(instance)
-        user = User.objects.get(id=instance.author.id)
-        blog_post["author"] = UserSerializer(instance=user).data
+        if instance.author:
+            user = User.objects.get(id=instance.author.id)
+            blog_post["author"] = UserSerializer(instance=user).data
+        else:
+            blog_post["author"] = {}
+        blog_post["likes"] = len(instance.likes.all())
         return blog_post
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        exclude = ["user"]
+
+    def create(self, validated_data):
+        # Automatically set the user to the authenticated user
+        user = self.context["request"].user
+        return Like.objects.create(user=user, **validated_data)

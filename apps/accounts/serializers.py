@@ -41,6 +41,9 @@ class AccountSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        # import pdb
+
+        # pdb.set_trace()
         return User.objects.create_user(**validated_data)
 
     def to_representation(self, instance):

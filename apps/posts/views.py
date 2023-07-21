@@ -1,6 +1,6 @@
 from rest_framework import generics
-from .models import BlogPost, Comment
-from .serializers import BlogPostSerializer, CommentSerializer
+from .models import BlogPost, Comment, Like
+from .serializers import BlogPostSerializer, CommentSerializer, LikeSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.viewsets import ModelViewSet
 
@@ -37,3 +37,12 @@ class CommentsAPIView(ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return Comment.objects.filter(author=user)
+
+
+class LikeViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = LikeSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Like.objects.filter(user=user)
