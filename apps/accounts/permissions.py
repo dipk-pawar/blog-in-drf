@@ -8,6 +8,7 @@ class SuperuserOnly(BasePermission):
             request.user
             and request.user.is_active
             and request.user.is_authenticated
+            and request.user.is_verified
             and request.user.is_superadmin
         )
 
@@ -20,6 +21,8 @@ class SuperuserORLoggedinUser(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         # Allow superusers or the user itself to access the object (user)
-        return request.user.is_active and (
-            request.user.is_superadmin or obj == request.user
+        return (
+            request.user.is_active
+            and request.user.is_verified
+            and (request.user.is_superadmin or obj == request.user)
         )
