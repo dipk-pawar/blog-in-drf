@@ -62,3 +62,59 @@ class UserCreateAPITest(APITestCase):
 
         # Check if the response contains the error message for an invalid email address
         self.assertIn("email", response.data)
+
+
+class LoginAPIViewTest(APITestCase):
+    def setUp(self):
+        self.url = reverse("login")
+
+        # Create a test user
+        self.user_data = {
+            "email": "test@example.com",
+            "first_name": "Dipak",
+            "last_name": "Pawar",
+            "password": "testpassword",
+            "is_active": True,
+        }
+        self.user = User.objects.create_user(**self.user_data)
+
+    def test_login_success(self):
+        login_data = {
+            "email": self.user_data["email"],
+            "password": self.user_data["password"],
+        }
+        response = self.client.post(self.url, data=login_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the response contains the access and refresh tokens
+        self.assertIn("tokens", response.data)
+        self.assertIn("access", response.data["tokens"])
+        self.assertIn("refresh", response.data["tokens"])
+
+    def test_login_invalid_credentials(self):
+        invalid_login_data = {
+            "email": self.user_data["email"],
+            "password": "invalidpassword",
+        }
+        response = self.client.post(self.url, data=invalid_login_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Check if the response contains the error message for invalid credentials
+        self.assertIn("errors", response.data)
+        self.assertIn("non_field_errors", response.data["errors"])
+
+    def test_login_missing_email_or_password(self):
+        # Test case for missing email or password fields
+        missing_email_data = {"password": "testpassword"}
+        response = self.client.post(self.url, data=missing_email_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Check if the response contains the error message for missing email field
+        self.assertIn("email", response.data)
+
+        missing_password_data = {"email": "test@example.com"}
+        response = self.client.post(self.url, data=missing_password_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Check if the response contains the error message for missing password field
+        self.assertIn("password", response.data)
