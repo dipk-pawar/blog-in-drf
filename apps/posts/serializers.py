@@ -15,7 +15,12 @@ class BlogPostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BlogPost
-        fields = "__all__"
+        exclude = ["author"]
+
+    def create(self, validated_data):
+        # Automatically set the user to the authenticated user
+        user = self.context["request"].user
+        return BlogPost.objects.create(author=user, **validated_data)
 
     def to_representation(self, instance):
         blog_post = super().to_representation(instance)
