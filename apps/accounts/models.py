@@ -30,6 +30,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     is_varified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
 
     # required fields for
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -38,7 +39,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     modified_date = models.DateTimeField(auto_now=True)
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
     is_superadmin = models.BooleanField(default=False)
 
     objects = CustomUserManager()
