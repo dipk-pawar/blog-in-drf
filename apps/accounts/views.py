@@ -57,10 +57,15 @@ class LoginAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        tokens = get_tokens_for_user(user=user)
+        if user.is_verified:
+            tokens = get_tokens_for_user(user=user)
+            return Response(
+                {"tokens": tokens, "message": "Login successfully"},
+                status=status.HTTP_200_OK,
+            )
         return Response(
-            {"tokens": tokens, "message": "Login successfully"},
-            status=status.HTTP_200_OK,
+            {"message": "Sorry, user is not Verified"},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
 
