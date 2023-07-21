@@ -29,6 +29,7 @@ class AccountSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
+        """Serializer for user login."""
         email = attrs.get("email")
         password = attrs.get("password")
 
@@ -41,9 +42,6 @@ class AccountSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        # import pdb
-
-        # pdb.set_trace()
         return User.objects.create_user(**validated_data)
 
     def to_representation(self, instance):
@@ -67,9 +65,3 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "first_name", "last_name", "email"]
         read_only_fields = ["id", "email"]
-
-
-# class UserModelSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = "__all__"

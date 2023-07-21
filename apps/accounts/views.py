@@ -13,11 +13,34 @@ from rest_framework.exceptions import PermissionDenied
 
 # Create your views here.
 class UserCreateAPI(generics.CreateAPIView):
+    """
+    API endpoint to create a new user.
+
+    Permissions:
+    - AllowAny: This view is accessible to anyone, even without authentication.
+
+    Serializer:
+    - AccountSerializer: Serializes and validates the request data for creating a new user.
+    """
+
     permission_classes = [AllowAny]
     serializer_class = AccountSerializer
 
 
 class LoginAPIView(APIView):
+    """
+    API endpoint for user login.
+
+    Request method: POST
+
+    Serializer:
+    - LoginSerializers: Serializes and validates the request data for user login.
+
+    Returns:
+    - On successful login, returns a JSON response with user tokens and a success message.
+    - On unsuccessful login, returns a JSON response with error messages.
+    """
+
     def post(self, request):
         serializer = LoginSerializers(data=request.data)
         if not serializer.is_valid(raise_exception=True):
@@ -42,16 +65,57 @@ class LoginAPIView(APIView):
 
 
 class UserListAPIView(generics.ListAPIView):
+    """
+    API endpoint to list all users.
+
+    Permissions:
+    - IsAuthenticated: Only authenticated users can access this view.
+    - SuperuserOnly: Only superusers can access this view.
+
+    Serializer:
+    - UserSerializer: Serializes the user data for the response.
+
+    Queryset:
+    - User.objects.all(): Retrieves all user objects from the database.
+    """
+
     permission_classes = [IsAuthenticated, SuperuserOnly]
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
 
 class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    API endpoint to retrieve, update, or delete a user.
+
+    Permissions:
+    - IsAuthenticated: Only authenticated users can access this view.
+    - SuperuserORLoggedinUser: Either the user is a superuser or the user's own profile.
+
+    Serializer:
+    - UserSerializer: Serializes the user data for the response.
+
+    Returns:
+    - On successful retrieval, returns a JSON response with the user's data.
+    - On successful update, returns a JSON response with the updated user's data.
+    - On successful deletion, returns a JSON response with a success message.
+
+    Raises:
+    - PermissionDenied: If the URL PK (user's primary key) does not match the logged-in user's PK,
+      it means the user is trying to access someone else's profile, and PermissionDenied is raised.
+    """
+
     permission_classes = [IsAuthenticated, SuperuserORLoggedinUser]
     serializer_class = UserSerializer
 
     def get_object(self):
+        """
+        Retrieve the user object for the currently authenticated user.
+
+        Returns:
+        - The user object for the currently authenticated user.
+        """
+
         # Get the logged-in user
         user = self.request.user
 
