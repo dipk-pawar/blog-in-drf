@@ -6,11 +6,6 @@ from .views import (
 )
 from django.urls import path
 
-# from rest_framework.routers import DefaultRouter
-
-# router = DefaultRouter()
-# router.register(r"users", AccountModelView, basename="users")
-
 urlpatterns = [
     path("register/", UserCreateAPI.as_view(), name="register"),
     path("login/", LoginAPIView.as_view(), name="login"),
