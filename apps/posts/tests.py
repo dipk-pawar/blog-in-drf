@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from .models import BlogPost
+from .models import BlogPost, Comment, Like
 from apps.accounts.models import User
 
 
@@ -196,3 +196,162 @@ class BlogPostRetrieveUpdateDestroyViewTest(APITestCase):
         # Try to delete the blog post created by the first user (should be denied)
         response = self.client.delete(self.url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class CommentsAPIViewTest(APITestCase):
+    def setUp(self):
+        # Create a test user
+        self.user = User.objects.create_user(
+            email="testuser@example.com",
+            password="testpassword",
+            first_name="Dipak",
+            last_name="Pawar",
+        )
+
+        # Create a test blog post for the user
+        self.blog_post = BlogPost.objects.create(
+            title="Test Post",
+            content="This is the content of the test blog post.",
+            author=self.user,
+        )
+
+        # URL for the CommentsAPIView
+        self.url = reverse("comments-list")
+
+        # Authenticate the user
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_comment(self):
+        comment_data = {
+            "title": "This is the comment title",
+            "content": "This is a test comment.",
+            "post": self.blog_post.id,
+            "author": self.user.id,
+        }
+        response = self.client.post(self.url, data=comment_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Check if the comment was created with the correct data
+        self.assertEqual(Comment.objects.count(), 1)
+        comment = Comment.objects.first()
+        self.assertEqual(comment.content, comment_data["content"])
+        self.assertEqual(response.data["author"], comment.author.pk)
+
+    def test_retrieve_comment(self):
+        # Create a test comment for the user
+        comment = Comment.objects.create(
+            content="Test comment content",
+            post=self.blog_post,
+            author=self.user,
+        )
+
+        # Retrieve the comment using the API
+        comment_url = reverse("comments-detail", kwargs={"pk": comment.pk})
+        response = self.client.get(comment_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the response data matches the data of the retrieved comment
+        self.assertEqual(response.data["content"], comment.content)
+        self.assertEqual(response.data["author"], comment.author.pk)
+
+    def test_update_comment(self):
+        # Create a test comment for the user
+        comment = Comment.objects.create(
+            content="Original content", author=self.user, post=self.blog_post
+        )
+
+        updated_data = {"content": "Updated content"}
+
+        comment_url = reverse("comments-detail", kwargs={"pk": comment.pk})
+        response = self.client.patch(comment_url, data=updated_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the comment was updated with the correct data
+        updated_comment = Comment.objects.get(pk=comment.pk)
+        self.assertEqual(updated_comment.content, updated_data["content"])
+
+    def test_delete_comment(self):
+        # Create a test comment for the user
+        comment = Comment.objects.create(
+            content="Test comment content", author=self.user, post=self.blog_post
+        )
+
+        comment_url = reverse("comments-detail", kwargs={"pk": comment.pk})
+        response = self.client.delete(comment_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Check if the comment was deleted from the database
+        self.assertFalse(Comment.objects.filter(pk=comment.pk).exists())
+
+    def test_unauthenticated_access(self):
+        # Unauthenticate the user
+        self.client.force_authenticate(user=None)
+
+        # Try to create a comment without authentication (should be denied)
+        comment_data = {
+            "content": "This is a test comment.",
+            "author": self.user.id,
+            "post": self.blog_post.id,
+        }
+        response = self.client.post(self.url, data=comment_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Try to retrieve a comment without authentication (should be denied)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Try to update a comment without authentication (should be denied)
+        response = self.client.put(self.url, data={}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Try to delete a comment without authentication (should be denied)
+        response = self.client.delete(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class LikeViewSetTest(APITestCase):
+    def setUp(self):
+        # Create a test user
+        self.user = User.objects.create_user(
+            email="testuser@example.com",
+            password="testpassword",
+            first_name="John",
+            last_name="Doe",
+        )
+
+        # Create a test blog post for the user
+        self.blog_post = BlogPost.objects.create(
+            title="Test Post",
+            content="This is the content of the test blog post.",
+            author=self.user,
+        )
+
+        # URL for the LikeViewSet
+        self.url = reverse("likes-list")
+
+        # Authenticate the user
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_like(self):
+        # Data to create the like
+        like_data = {"post": self.blog_post.id}
+
+        response = self.client.post(self.url, data=like_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Check if the like was created with the correct data
+        self.assertEqual(Like.objects.count(), 1)
+        like = Like.objects.first()
+        self.assertEqual(like.post.pk, like_data["post"])
+        self.assertEqual(like.user, self.user)
+
+    def test_list_likes(self):
+        # Create some test likes for the user
+        like1 = Like.objects.create(post=self.blog_post, user=self.user)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the response data contains the serialized likes for the authenticated user
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["post"], like1.post.pk)
