@@ -161,3 +161,121 @@ class UserListAPIViewTest(APITestCase):
 
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class UserRetrieveUpdateDestroyViewTest(APITestCase):
+    def setUp(self):
+        # Create a test superuser
+        self.superuser = User.objects.create_superuser(
+            email="superuser@example.com",
+            password="testpassword",
+            first_name="Dipak",
+            last_name="Pawar",
+        )
+
+        # Create a regular user
+        self.user = User.objects.create_user(
+            email="user@example.com",
+            password="testpassword",
+            first_name="Dip",
+            last_name="Pawar",
+            is_active=True,
+        )
+
+        self.url = "users-details"
+
+    def test_superuser_access(self):
+        # Log in the superuser
+        self.client.force_authenticate(user=self.superuser)
+
+        # Make a request to retrieve, update, or delete the superuser's own data
+        url = reverse(self.url, kwargs={"pk": self.superuser.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_superuser_update(self):
+        # Log in the superuser
+        self.client.force_authenticate(user=self.superuser)
+
+        # Make a request to update the superuser's own data
+        new_data = {
+            "first_name": "Updated Dipak",
+            "last_name": "Updated Pawar",
+        }
+        url = reverse(self.url, kwargs={"pk": self.superuser.pk})
+        response = self.client.put(url, data=new_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the user data has been updated
+        updated_user = User.objects.get(pk=self.superuser.pk)
+        self.assertEqual(updated_user.first_name, new_data["first_name"])
+        self.assertEqual(updated_user.last_name, new_data["last_name"])
+
+    def test_superuser_delete(self):
+        # Log in the superuser
+        self.client.force_authenticate(user=self.superuser)
+
+        # Make a request to delete the superuser's own data
+        url = reverse(self.url, kwargs={"pk": self.superuser.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Check if the user has been deleted from the database
+        self.assertFalse(User.objects.filter(pk=self.superuser.pk).exists())
+
+    def test_regular_user_access_own_data(self):
+        # Log in the regular user
+        self.client.force_authenticate(user=self.user)
+
+        # Make a request to retrieve, update, or delete the regular user's own data
+        url = reverse(self.url, kwargs={"pk": self.user.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_regular_user_update(self):
+        # Log in the regular user
+        self.client.force_authenticate(user=self.user)
+
+        # Make a request to update the regular user's own data
+        new_data = {
+            "first_name": "Updated Dip",
+            "last_name": "Updated Pawar",
+        }
+        url = reverse(self.url, kwargs={"pk": self.user.pk})
+        response = self.client.put(url, data=new_data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check if the user data has been updated
+        updated_user = User.objects.get(pk=self.user.pk)
+        self.assertEqual(updated_user.first_name, new_data["first_name"])
+        self.assertEqual(updated_user.last_name, new_data["last_name"])
+
+    def test_regular_user_delete(self):
+        # Log in the regular user
+        self.client.force_authenticate(user=self.user)
+
+        # Make a request to delete the regular user's own data
+        url = reverse(self.url, kwargs={"pk": self.user.pk})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Check if the user has been deleted from the database
+        self.assertFalse(User.objects.filter(pk=self.user.pk).exists())
+
+    def test_regular_user_access_other_user_data(self):
+        # Log in the regular user
+        self.client.force_authenticate(user=self.user)
+
+        # Attempt to access the superuser's data (which should be denied)
+        url = reverse(self.url, kwargs={"pk": self.superuser.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_unauthenticated_access(self):
+        # Do not log in any user
+        self.client.force_authenticate(user=None)
+
+        # Attempt to access a user's data without authentication (which should be denied)
+        url = reverse(self.url, kwargs={"pk": self.superuser.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
