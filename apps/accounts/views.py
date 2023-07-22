@@ -1,5 +1,5 @@
 from rest_framework.response import Response
-from rest_framework import generics
+from rest_framework import generics, status
 from .serializers import AccountSerializer, LoginSerializers, UserSerializer
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
@@ -9,6 +9,9 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import User
 from .permissions import SuperuserOnly, SuperuserORLoggedinUser
 from rest_framework.exceptions import PermissionDenied
+from apps.utils.send_mail_helper import SendMail
+from django.utils.encoding import smart_str
+from django.utils.http import urlsafe_base64_decode
 
 
 # Create your views here.
@@ -25,6 +28,21 @@ class UserCreateAPI(generics.CreateAPIView):
 
     permission_classes = [AllowAny]
     serializer_class = AccountSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Call the create method of the parent class to handle the user creation
+        response = super().create(request, *args, **kwargs)
+
+        # Check if the user creation was successful
+        if response.status_code == status.HTTP_201_CREATED:
+            data = response.data
+            SendMail.send_mail(email=data.get("email"))
+
+            data[
+                "message"
+            ] = "Account created successfully. The verification link has been sent to your email address. Please verify your account."
+
+        return response
 
 
 class LoginAPIView(APIView):
@@ -131,3 +149,15 @@ class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("You do not have permission to access this user.")
 
         return user
+
+
+class VerifyUser(APIView):
+    def post(self, request, uid, *args, **kwargs):
+        user_id = smart_str(urlsafe_base64_decode(uid))
+        try:
+            user = User.objects.get(id=user_id)
+            user.is_verified = True
+            user.save()
+            return Response(data={"message": "User verified successfully"})
+        except User.DoesNotExist:
+            return Response(data={"message": "Sorry, User not found"})

@@ -3,6 +3,7 @@ from .views import (
     LoginAPIView,
     UserListAPIView,
     UserRetrieveUpdateDestroyView,
+    VerifyUser,
 )
 from django.urls import path
 
@@ -12,5 +13,10 @@ urlpatterns = [
     path("users/", UserListAPIView.as_view(), name="users"),
     path(
         "users/<int:pk>/", UserRetrieveUpdateDestroyView.as_view(), name="users-details"
+    ),
+    path(
+        "verify-account/<str:uid>/",
+        VerifyUser.as_view(),
+        name="verify-user",
     ),
 ]

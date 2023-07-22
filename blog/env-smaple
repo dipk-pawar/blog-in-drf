@@ -1,0 +1,6 @@
+DEBUG=
+
+
+# sengrid settings
+EMAIL_USER=
+SENDGRID_API_KEY=
