@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-b3iuj24uq54qi+wql^p)yzeqam(r-$7!rt5ah!azwpmqnyuzvf"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -140,3 +141,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(minutes=50)}
 PASSWORD_RESET_TIMEOUT = 900  # time in second means 900 sec = 15 Min
+
+
+# Email settings
+EMAIL_HOST_USER = config("EMAIL_USER")
+SENDGRID_API_KEY = config("SENDGRID_API_KEY")
